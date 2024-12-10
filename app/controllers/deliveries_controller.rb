@@ -1,80 +1,63 @@
+
 class DeliveriesController < ApplicationController
-  before_action :set_delivery, only: %i[ show edit update destroy ]
-  before_action :authenticate_user!
-
   def index
+    matching_deliveries = Delivery.all
+
     @list_of_deliveries = Delivery.where(user_id: current_user.id, arrived: false)
+    .order(created_at: :desc)
+    
+    render({ :template => "deliveries/index" })
   end
-  # GET /deliveries/1 or /deliveries/1.json
+
   def show
-    the_id = params[:path_id]
-  
-    @the_delivery = Delivery.find_by(id: the_id)
-  
-    if @the_delivery.nil?
-      render plain: "Delivery not found", status: :not_found
-      return
-    end
-  
-    render template: "deliveries/show"
-  end
-  
+    the_id = params.fetch("path_id")
 
-  # GET /deliveries/new
-  def new
-    @delivery = Delivery.new
+    matching_deliveries = Delivery.where({ :id => the_id })
+
+    @the_delivery = matching_deliveries.at(0)
+
+    render({ :template => "deliveries/show" })
   end
 
-  # GET /deliveries/1/edit
-  def edit
-  end
-
-  # POST /deliveries or /deliveries.json
   def create
-    @delivery = Delivery.new(delivery_params)
+    the_delivery = Delivery.new
+    the_delivery.description = params.fetch("query_description")
+    the_delivery.details = params.fetch("query_details")
+    the_delivery.supposed_to_arrive_on = params.fetch("query_supposed_to_arrive_on")
+    the_delivery.arrived = params.fetch("query_arrived", false)
 
-    respond_to do |format|
-      if @delivery.save
-        format.html { redirect_to delivery_url(@delivery), notice: "Delivery was successfully created." }
-        format.json { render :show, status: :created, location: @delivery }
-      else
-        format.html { render :new, status: :unprocessable_entity }
-        format.json { render json: @delivery.errors, status: :unprocessable_entity }
-      end
+    if the_delivery.valid?
+      the_delivery.save
+      redirect_to("/deliveries", { :notice => "Delivery created successfully." })
+    else
+      redirect_to("/deliveries", { :alert => the_delivery.errors.full_messages.to_sentence })
     end
   end
 
-  # PATCH/PUT /deliveries/1 or /deliveries/1.json
   def update
-    respond_to do |format|
-      if @delivery.update(delivery_params)
-        format.html { redirect_to delivery_url(@delivery), notice: "Delivery was successfully updated." }
-        format.json { render :show, status: :ok, location: @delivery }
-      else
-        format.html { render :edit, status: :unprocessable_entity }
-        format.json { render json: @delivery.errors, status: :unprocessable_entity }
-      end
+    the_id = params.fetch("path_id")
+    the_delivery = Delivery.where({ :id => the_id }).at(0)
+
+    the_delivery.user_id = params.fetch("query_user_id")
+    the_delivery.description = params.fetch("query_description")
+    the_delivery.details = params.fetch("query_details")
+    the_delivery.supposed_to_arrive_on = params.fetch("query_supposed_to_arrive_on")
+    the_delivery.arrived = params.fetch("query_arrived", false)
+
+    if the_delivery.valid?
+      the_delivery.save
+      redirect_to("/deliveries/#{the_delivery.id}", { :notice => "Delivery updated successfully."} )
+    else
+      redirect_to("/deliveries/#{the_delivery.id}", { :alert => the_delivery.errors.full_messages.to_sentence })
     end
   end
 
-  # DELETE /deliveries/1 or /deliveries/1.json
   def destroy
-    @delivery.destroy!
+    the_id = params.fetch("path_id")
+    the_delivery = Delivery.where({ :id => the_id }).at(0)
 
-    respond_to do |format|
-      format.html { redirect_to deliveries_url, notice: "Delivery was successfully destroyed." }
-      format.json { head :no_content }
-    end
+    the_delivery.destroy
+
+    redirect_to("/deliveries", { :notice => "Delivery deleted successfully."} )
   end
-
-  private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_delivery
-      @delivery = Delivery.find(params[:id])
-    end
-
-    # Only allow a list of trusted parameters through.
-    def delivery_params
-      params.fetch(:delivery, {})
-    end
 end
