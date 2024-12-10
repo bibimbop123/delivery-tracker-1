@@ -5,7 +5,7 @@ Rails.application.routes.draw do
   root "deliveries#index"
 
   # Routes for the Delivery resource:
-  get("/deliveries", {:controller => "deliveries", :action => "index"})
+  get("/deliveries", { :controller => "deliveries", :action => "deliveries" })
 
   # CREATE
   post("/insert_delivery", { :controller => "deliveries", :action => "create" })
